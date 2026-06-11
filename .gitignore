@@ -7,8 +7,7 @@ tmp/
 tmp*/
 .streamlit/secrets.toml
 .streamlit/secrets.toml.*
-data/*.db
-!data/.gitkeep
+data/tmp_jobs_check.db
 data/resume_dataset/*.csv
 !data/resume_dataset/.gitkeep
 API.txt
