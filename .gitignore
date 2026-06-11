@@ -1,0 +1,16 @@
+__pycache__/
+.pytest_cache/
+.pytest-basetemp/
+.venv/
+.venv_check/
+tmp/
+tmp*/
+.streamlit/secrets.toml
+.streamlit/secrets.toml.*
+data/*.db
+!data/.gitkeep
+data/resume_dataset/*.csv
+!data/resume_dataset/.gitkeep
+API.txt
+api.txt
+*.pyc

@@ -1,0 +1,103 @@
+ingestion:
+  schedule_interval_hours: 4
+  queries:
+    - search_term: "data scientist"
+      location: "Delhi"
+    - search_term: "ML engineer"
+      location: "Bangalore"
+    - search_term: "AI engineer"
+      location: "remote"
+    - search_term: "data analyst"
+      location: "Noida"
+    - search_term: "data engineer"
+      location: "Gurgaon"
+    - search_term: "generative AI engineer"
+      location: "remote"
+    - search_term: "MLOps engineer"
+      location: "Bangalore"
+    - search_term: "business intelligence analyst"
+      location: "Delhi"
+  description_max_chars: 2000
+
+ml:
+  skill_keywords:
+    - python
+    - sql
+    - tensorflow
+    - pytorch
+    - scikit-learn
+    - langchain
+    - docker
+    - mlops
+    - llm
+    - rag
+    - xgboost
+    - nlp
+    - pandas
+    - power bi
+    - tableau
+    - spark
+    - kafka
+    - fastapi
+    - numpy
+    - matplotlib
+    - seaborn
+    - streamlit
+    - flask
+    - django
+    - java
+    - javascript
+    - aws
+    - azure
+    - gcp
+    - kubernetes
+    - airflow
+    - dbt
+    - snowflake
+    - databricks
+    - hadoop
+    - hive
+    - etl
+    - excel
+    - git
+    - linux
+    - mongodb
+    - postgresql
+    - mysql
+    - redis
+    - elasticsearch
+    - transformers
+    - hugging face
+    - openai
+    - computer vision
+    - opencv
+    - deep learning
+    - machine learning
+    - statistics
+    - a/b testing
+    - time series
+    - generative ai
+    - prompt engineering
+    - vector database
+    - fine-tuning
+    - bert
+    - keras
+    - lightgbm
+    - looker
+    - rest api
+    - microservices
+    - scala
+  kmeans_min_clusters: 3
+  kmeans_max_clusters: 7
+  trend_history_days: 7
+  forecast_horizon_days: 7
+
+dashboard:
+  cache_ttl_seconds: 3600
+  top_skills_display: 20
+  top_jobs_resume_display: 20
+  posting_freshness_max_days: 30
+
+secrets:
+  chat_api_key_name: GROQ_API_KEY
+  search_api_key_name: JSEARCH_KEY

@@ -1,0 +1,526 @@
+
+<style>
+  .root { padding: 1rem 0; font-family: var(--font-sans); }
+  .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
+  .step-nav { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.5rem; }
+  .step-pill { font-size:12px; padding:5px 12px; border-radius:20px; border:0.5px solid var(--color-border-secondary); color:var(--color-text-secondary); cursor:pointer; background:transparent; transition:all .15s; }
+  .step-pill.active { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .panel-title { font-size:18px; font-weight:500; color:var(--color-text-primary); margin:0 0 4px; }
+  .panel-sub { font-size:13px; color:var(--color-text-secondary); margin:0 0 1.25rem; }
+  .card { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.25rem; margin-bottom:12px; }
+  .card-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .card-icon { font-size:18px; color:var(--color-text-secondary); }
+  .card-title { font-size:14px; font-weight:500; color:var(--color-text-primary); margin:0; }
+  .card-body { font-size:13px; color:var(--color-text-secondary); line-height:1.65; margin:0; }
+  .code-block { background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); padding:10px 14px; font-family:var(--font-mono); font-size:12px; color:var(--color-text-primary); margin:10px 0 0; white-space:pre-wrap; word-break:break-all; }
+  .tag-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .tag { font-size:11px; padding:3px 8px; border-radius:var(--border-radius-md); border:0.5px solid; }
+  .tag-blue { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+  .tag-green { background:var(--color-background-success); color:var(--color-text-success); border-color:var(--color-border-success); }
+  .tag-warn { background:var(--color-background-warning); color:var(--color-text-warning); border-color:var(--color-border-warning); }
+  .tag-gray { background:var(--color-background-secondary); color:var(--color-text-secondary); border-color:var(--color-border-tertiary); }
+  .two-col { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  .section-label { font-size:11px; font-weight:500; color:var(--color-text-tertiary); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
+  .source-card { border-left:3px solid; padding:10px 14px; border-radius:0 var(--border-radius-md) var(--border-radius-md) 0; border-top:0.5px solid var(--color-border-tertiary); border-right:0.5px solid var(--color-border-tertiary); border-bottom:0.5px solid var(--color-border-tertiary); margin-bottom:10px; background:var(--color-background-primary); }
+  .source-name { font-size:14px; font-weight:500; color:var(--color-text-primary); margin:0 0 3px; }
+  .source-desc { font-size:12px; color:var(--color-text-secondary); margin:0 0 6px; }
+  .nav-row { display:flex; justify-content:space-between; margin-top:1.5rem; }
+  .nav-btn { font-size:13px; padding:8px 16px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:transparent; color:var(--color-text-primary); cursor:pointer; }
+  .nav-btn:hover { background:var(--color-background-secondary); }
+  .nav-btn.primary { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+  .arch-box { background:var(--color-background-secondary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); padding:10px 12px; font-size:13px; text-align:center; color:var(--color-text-primary); }
+  .arch-arrow { display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--color-text-tertiary); }
+  .flow-row { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; align-items:center; margin:1rem 0; }
+  .metric-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px; }
+  .metric-card { background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:12px; }
+  .metric-val { font-size:20px; font-weight:500; color:var(--color-text-primary); margin:0 0 2px; }
+  .metric-label { font-size:12px; color:var(--color-text-secondary); margin:0; }
+  .warn-box { background:var(--color-background-warning); border:0.5px solid var(--color-border-warning); border-radius:var(--border-radius-md); padding:10px 14px; font-size:13px; color:var(--color-text-warning); margin-bottom:12px; }
+  .success-box { background:var(--color-background-success); border:0.5px solid var(--color-border-success); border-radius:var(--border-radius-md); padding:10px 14px; font-size:13px; color:var(--color-text-success); margin-bottom:12px; }
+</style>
+
+<div class="root">
+  <h2 class="sr-only">Step-by-step build guide for Real-Time Job Market Intelligence Dashboard</h2>
+
+  <div class="step-nav" id="stepNav"></div>
+  <div id="panels"></div>
+</div>
+
+<script>
+const steps = [
+  {
+    label: "Architecture",
+    title: "System architecture overview",
+    sub: "Understand what you're building before writing a single line of code",
+    content: () => `
+      <div class="flow-row">
+        <div class="arch-box"><i class="ti ti-database" style="font-size:20px;display:block;margin:0 auto 4px"></i>Data sources<br><span style="font-size:11px;color:var(--color-text-secondary)">Indeed, Naukri, LinkedIn</span></div>
+        <div class="arch-arrow"><i class="ti ti-arrow-right"></i></div>
+        <div class="arch-box"><i class="ti ti-settings" style="font-size:20px;display:block;margin:0 auto 4px"></i>Ingestion layer<br><span style="font-size:11px;color:var(--color-text-secondary)">Python scheduler</span></div>
+        <div class="arch-arrow"><i class="ti ti-arrow-right"></i></div>
+        <div class="arch-box"><i class="ti ti-brain" style="font-size:20px;display:block;margin:0 auto 4px"></i>ML layer<br><span style="font-size:11px;color:var(--color-text-secondary)">NLP, clustering, TF-IDF</span></div>
+      </div>
+      <div class="flow-row" style="grid-template-columns:1fr 1fr;max-width:340px;margin:0 auto 1rem">
+        <div class="arch-arrow" style="justify-content:flex-end"><i class="ti ti-arrow-right"></i></div>
+        <div class="arch-box"><i class="ti ti-chart-bar" style="font-size:20px;display:block;margin:0 auto 4px"></i>Dashboard<br><span style="font-size:11px;color:var(--color-text-secondary)">Streamlit UI</span></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><i class="ti ti-layers card-icon"></i><p class="card-title">What each layer does</p></div>
+          <p class="card-body"><strong style="font-weight:500">Data sources</strong> → job APIs/scrapers fetch live listings every few hours.<br><br><strong style="font-weight:500">Ingestion</strong> → Python script cleans, deduplicates, stores in SQLite.<br><br><strong style="font-weight:500">ML layer</strong> → spaCy extracts skills, K-Means clusters roles, TF-IDF scores resume fit.<br><br><strong style="font-weight:500">Dashboard</strong> → Streamlit renders charts, heatmaps, trend forecasts.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><i class="ti ti-package card-icon"></i><p class="card-title">Entire free stack</p></div>
+          <div class="tag-row">
+            <span class="tag tag-green">JSearch API (free 200/mo)</span>
+            <span class="tag tag-green">spaCy (free)</span>
+            <span class="tag tag-green">Scikit-learn (free)</span>
+            <span class="tag tag-green">SQLite (free)</span>
+            <span class="tag tag-green">Streamlit Cloud (free)</span>
+            <span class="tag tag-green">Plotly (free)</span>
+            <span class="tag tag-green">APScheduler (free)</span>
+            <span class="tag tag-green">Groq API (free LLM)</span>
+          </div>
+          <p class="card-body" style="margin-top:10px">Total infra cost: ₹0. Everything deploys on Streamlit Cloud's free tier.</p>
+        </div>
+      </div>
+    `
+  },
+  {
+    label: "Data sources",
+    title: "Real-time data — what to use",
+    sub: "Three sources, zero cost, covering Indeed + LinkedIn + Naukri",
+    content: () => `
+      <p class="section-label">Primary source — best for real-time</p>
+      <div class="source-card" style="border-left-color:#185FA5">
+        <p class="source-name">JSearch API (via OpenWeb Ninja / RapidAPI)</p>
+        <p class="source-desc">Aggregates live job listings from Google for Jobs, pulling from LinkedIn, Indeed, Glassdoor in real-time. 30+ data points per job. Free tier: 200 requests/month. No CAPTCHA issues.</p>
+        <div class="tag-row">
+          <span class="tag tag-blue">200 free req/month</span>
+          <span class="tag tag-green">Real-time data</span>
+          <span class="tag tag-gray">JSON response</span>
+        </div>
+        <div class="code-block">GET https://jsearch.p.rapidapi.com/search?query=data+scientist+in+Delhi&page=1&num_pages=5
+Headers: X-RapidAPI-Key: YOUR_KEY</div>
+      </div>
+
+      <p class="section-label">Secondary source — India-specific</p>
+      <div class="source-card" style="border-left-color:#0F6E56">
+        <p class="source-name">Indeed Scraper by omkarcloud (GitHub)</p>
+        <p class="source-desc">Open-source REST API wrapper for Indeed. Returns structured JSON with title, company, salary, location, skills. 5,000 free requests/month. Data pulled live from Indeed — not cached.</p>
+        <div class="tag-row">
+          <span class="tag tag-green">5,000 free req/month</span>
+          <span class="tag tag-blue">India-focused</span>
+          <span class="tag tag-gray">github.com/omkarcloud/indeed-scraper</span>
+        </div>
+        <div class="code-block">GET https://indeed-scraper.omkar.cloud/indeed/search
+    ?search_term=ML engineer&location=Delhi
+Headers: API-Key: YOUR_KEY</div>
+      </div>
+
+      <p class="section-label">Fallback / enrichment</p>
+      <div class="source-card" style="border-left-color:#BA7517">
+        <p class="source-name">Indeed MCP (you already have it connected!)</p>
+        <p class="source-desc">You have Indeed connected as an MCP in this Claude session. You can query job data directly for prototyping and testing your pipeline before wiring the real API. Use this to validate your data schema.</p>
+        <div class="tag-row">
+          <span class="tag tag-warn">Already connected in Claude</span>
+          <span class="tag tag-gray">Use for prototyping only</span>
+        </div>
+      </div>
+
+      <div class="warn-box"><i class="ti ti-info-circle" style="margin-right:6px"></i>On the free tier, budget 200–300 API calls/day across sources. Fetch once every 4–6 hours for ~4–5 job categories. That comfortably fits within limits for a demo/portfolio project.</div>
+    `
+  },
+  {
+    label: "Phase 1 — Ingest",
+    title: "Phase 1: data ingestion & storage",
+    sub: "Fetch → clean → store. Build this first — everything else depends on it.",
+    content: () => `
+      <div class="card">
+        <div class="card-head"><i class="ti ti-code card-icon"></i><p class="card-title">Project folder structure</p></div>
+        <div class="code-block">job-market-dashboard/
+├── data/
+│   └── jobs.db          # SQLite database
+├── ingestion/
+│   ├── fetcher.py        # API calls to JSearch/Indeed
+│   ├── cleaner.py        # dedup, normalize salaries, parse dates
+│   └── scheduler.py     # APScheduler to run every 4h
+├── ml/
+│   ├── skill_extractor.py
+│   ├── clustering.py
+│   └── trend_forecast.py
+├── dashboard/
+│   └── app.py            # Streamlit app
+└── requirements.txt</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><i class="ti ti-cloud-download card-icon"></i><p class="card-title">fetcher.py — core fetch logic</p></div>
+          <div class="code-block">import requests, sqlite3, json
+from datetime import datetime
+
+def fetch_jobs(query="data scientist", location="Delhi"):
+    url = "https://jsearch.p.rapidapi.com/search"
+    headers = {"X-RapidAPI-Key": "YOUR_KEY"}
+    params = {"query": f"{query} in {location}",
+              "page": 1, "num_pages": 3}
+    r = requests.get(url, headers=headers, params=params)
+    return r.json().get("data", [])
+
+def save_to_db(jobs):
+    conn = sqlite3.connect("data/jobs.db")
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS jobs (
+        id TEXT PRIMARY KEY,
+        title TEXT, company TEXT,
+        location TEXT, salary TEXT,
+        description TEXT, skills TEXT,
+        posted_at TEXT, fetched_at TEXT
+    )""")
+    for j in jobs:
+        c.execute("""INSERT OR IGNORE INTO jobs VALUES
+            (?,?,?,?,?,?,?,?,?)""",
+            (j.get("job_id"), j.get("job_title"),
+             j.get("employer_name"), j.get("job_city"),
+             str(j.get("job_min_salary","")),
+             j.get("job_description","")[:2000], "",
+             j.get("job_posted_at_datetime_utc",""),
+             datetime.now().isoformat()))
+    conn.commit(); conn.close()</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><i class="ti ti-clock card-icon"></i><p class="card-title">scheduler.py — auto-refresh every 4h</p></div>
+          <div class="code-block">from apscheduler.schedulers.blocking import BlockingScheduler
+from fetcher import fetch_jobs, save_to_db
+
+QUERIES = [
+    ("data scientist", "Delhi"),
+    ("ML engineer", "Bangalore"),
+    ("AI engineer", "remote"),
+    ("data analyst", "Noida"),
+]
+
+def run_all():
+    for query, loc in QUERIES:
+        jobs = fetch_jobs(query, loc)
+        save_to_db(jobs)
+        print(f"Fetched {len(jobs)} jobs for: {query}, {loc}")
+
+scheduler = BlockingScheduler()
+scheduler.add_job(run_all, 'interval', hours=4)
+run_all()  # run once on startup
+scheduler.start()</div>
+          <p class="card-body" style="margin-top:8px">Run <code style="font-size:11px;background:var(--color-background-secondary);padding:1px 5px;border-radius:4px">python scheduler.py</code> once and it keeps refreshing in the background.</p>
+        </div>
+      </div>
+    `
+  },
+  {
+    label: "Phase 2 — ML",
+    title: "Phase 2: the ML & NLP layer",
+    sub: "Three ML components — each one is a talking point in any data science interview",
+    content: () => `
+      <div class="card">
+        <div class="card-head"><i class="ti ti-tag card-icon"></i><p class="card-title">Component 1 — skill extraction with spaCy</p></div>
+        <p class="card-body">Parse every job description and extract the most-demanded skills. This is NLP entity recognition — a direct portfolio talking point.</p>
+        <div class="code-block">import spacy, re
+from collections import Counter
+
+nlp = spacy.load("en_core_web_sm")
+
+SKILL_KEYWORDS = [
+    "python","sql","tensorflow","pytorch","scikit-learn",
+    "pandas","numpy","power bi","tableau","spark","kafka",
+    "langchain","fastapi","docker","kubernetes","mlops",
+    "llm","rag","transformer","bert","xgboost","nlp",
+]
+
+def extract_skills(description):
+    desc_lower = description.lower()
+    found = [s for s in SKILL_KEYWORDS if s in desc_lower]
+    return found
+
+def skill_frequency(db_jobs):
+    all_skills = []
+    for job in db_jobs:
+        all_skills.extend(extract_skills(job["description"]))
+    return Counter(all_skills).most_common(20)</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><i class="ti ti-vector card-icon"></i><p class="card-title">Component 2 — K-Means role clustering</p></div>
+          <p class="card-body">Cluster job titles into segments (e.g. "ML Engineer", "Data Analyst", "AI Researcher") automatically, even for new titles.</p>
+          <div class="code-block">from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+
+def cluster_jobs(descriptions, n=5):
+    vec = TfidfVectorizer(max_features=100, stop_words="english")
+    X = vec.fit_transform(descriptions)
+    km = KMeans(n_clusters=n, random_state=42)
+    labels = km.fit_predict(X)
+    return labels, vec, km</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><i class="ti ti-file-check card-icon"></i><p class="card-title">Component 3 — resume fit score</p></div>
+          <p class="card-body">User pastes their resume → TF-IDF cosine similarity gives a "fit score" for each job. Uses your existing NLP resume screener knowledge!</p>
+          <div class="code-block">from sklearn.metrics.pairwise import cosine_similarity
+
+def score_resume(resume_text, job_descs):
+    vec = TfidfVectorizer(stop_words="english")
+    corpus = [resume_text] + job_descs
+    tfidf = vec.fit_transform(corpus)
+    scores = cosine_similarity(tfidf[0:1], tfidf[1:])
+    return scores[0]  # array of fit scores</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><i class="ti ti-trending-up card-icon"></i><p class="card-title">Component 4 — demand trend forecast</p></div>
+        <p class="card-body">Use daily job counts per skill to forecast which skills are trending up vs declining. Even a 7-day rolling average is enough for a strong visual.</p>
+        <div class="code-block">import pandas as pd
+from sklearn.linear_model import LinearRegression
+import numpy as np
+
+def forecast_trend(daily_counts):
+    # daily_counts: list of (date, count) tuples
+    df = pd.DataFrame(daily_counts, columns=["date","count"])
+    df["day_num"] = range(len(df))
+    X = df[["day_num"]]
+    y = df["count"]
+    model = LinearRegression().fit(X, y)
+    # predict next 7 days
+    future = pd.DataFrame({"day_num": range(len(df), len(df)+7)})
+    return model.predict(future)  # upward = growing demand</div>
+      </div>
+    `
+  },
+  {
+    label: "Phase 3 — Dashboard",
+    title: "Phase 3: the Streamlit dashboard",
+    sub: "The visual layer that turns all your ML work into a demo interviewers remember",
+    content: () => `
+      <div class="success-box"><i class="ti ti-sparkles" style="margin-right:6px"></i>This is the part that makes the project stand out. Build a dashboard you can literally demo live during an interview — paste your resume and show the fit scores in real time.</div>
+
+      <div class="card">
+        <div class="card-head"><i class="ti ti-layout-dashboard card-icon"></i><p class="card-title">Dashboard layout — 4 key screens</p></div>
+        <div class="tag-row" style="margin-bottom:10px">
+          <span class="tag tag-blue">1. Skill heatmap</span>
+          <span class="tag tag-blue">2. Trending skills chart</span>
+          <span class="tag tag-blue">3. Resume fit scorer</span>
+          <span class="tag tag-blue">4. Live job listings table</span>
+        </div>
+        <div class="code-block">import streamlit as st
+import plotly.express as px
+import sqlite3, pandas as pd
+
+st.set_page_config(page_title="Job Market Intel", layout="wide")
+st.title("Real-Time Job Market Intelligence")
+
+# Sidebar filters
+city = st.sidebar.selectbox("City", ["Delhi", "Bangalore", "Remote", "All"])
+domain = st.sidebar.multiselect("Domain", ["Data Science","ML","AI","Analytics"])
+days = st.sidebar.slider("Posted in last N days", 1, 30, 7)
+
+# Load data from SQLite
+@st.cache_data(ttl=3600)  # refresh cache every hour
+def load_jobs(city, days):
+    conn = sqlite3.connect("data/jobs.db")
+    df = pd.read_sql(f"""
+        SELECT * FROM jobs
+        WHERE fetched_at >= datetime('now', '-{days} days')
+        {"AND location LIKE '%"+city+"%'" if city != 'All' else ''}
+        ORDER BY fetched_at DESC
+    """, conn)
+    conn.close()
+    return df
+
+df = load_jobs(city, days)
+col1, col2, col3 = st.columns(3)
+col1.metric("Total listings", len(df))
+col2.metric("Unique companies", df['company'].nunique())
+col3.metric("Cities covered", df['location'].nunique())
+
+# Skill heatmap
+skill_data = skill_frequency_from_df(df)
+fig = px.bar(skill_data, x="skill", y="count", title="Most demanded skills")
+st.plotly_chart(fig, use_container_width=True)
+
+# Resume fit scorer
+st.subheader("Resume fit scorer")
+resume_input = st.text_area("Paste your resume text here", height=150)
+if resume_input and st.button("Score my resume"):
+    scores = score_resume(resume_input, df["description"].tolist())
+    df["fit_score"] = (scores * 100).round(1)
+    st.dataframe(df[["title","company","location","fit_score"]]
+                   .sort_values("fit_score", ascending=False).head(20))</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><i class="ti ti-cloud-upload card-icon"></i><p class="card-title">Deploy to Streamlit Cloud (free)</p></div>
+          <div class="code-block">1. Push code to GitHub
+2. Go to share.streamlit.io
+3. Connect GitHub repo
+4. Set secrets:
+   JSEARCH_KEY = "your_key"
+5. Click Deploy
+
+→ Live URL in 2 minutes.
+   Free, public, shareable.</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><i class="ti ti-list card-icon"></i><p class="card-title">requirements.txt</p></div>
+          <div class="code-block">streamlit
+pandas
+plotly
+scikit-learn
+spacy
+apscheduler
+requests
+sqlite3
+groq        # for LLM chat feature</div>
+        </div>
+      </div>
+    `
+  },
+  {
+    label: "Phase 4 — GenAI",
+    title: "Phase 4: add the GenAI layer",
+    sub: "This is what separates your project from every other analytics dashboard",
+    content: () => `
+      <div class="card">
+        <div class="card-head"><i class="ti ti-message-chatbot card-icon"></i><p class="card-title">LLM chat interface using Groq (free)</p></div>
+        <p class="card-body">Add a chat box where the user can ask natural language questions about the job data. Groq's free tier gives you 14,400 tokens/minute — more than enough.</p>
+        <div class="code-block">from groq import Groq
+import sqlite3, pandas as pd
+
+client = Groq(api_key="YOUR_GROQ_KEY")  # free at console.groq.com
+
+def answer_job_query(question: str, df: pd.DataFrame) -> str:
+    # Summarize current data as context
+    top_skills = df["skills"].str.split(",").explode().value_counts().head(10)
+    summary = f"""
+    Current job market snapshot ({len(df)} listings):
+    - Top skills: {', '.join(top_skills.index.tolist())}
+    - Top cities: {', '.join(df['location'].value_counts().head(5).index.tolist())}
+    - Top companies hiring: {', '.join(df['company'].value_counts().head(5).index.tolist())}
+    """
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",  # free on Groq
+        messages=[
+            {"role": "system", "content": f"You are a job market analyst. Here is current data:\n{summary}"},
+            {"role": "user", "content": question}
+        ]
+    )
+    return response.choices[0].message.content</div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><i class="ti ti-sparkles card-icon"></i><p class="card-title">Sample questions it can answer</p></div>
+          <p class="card-body" style="line-height:2">"Which skills are trending up this week in Bangalore?"<br>"Am I a good fit for a data analyst role with my profile?"<br>"Which companies are hiring the most ML engineers?"<br>"What's the average salary for data scientists in Delhi?"<br>"Should I learn PyTorch or TensorFlow right now?"</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><i class="ti ti-award card-icon"></i><p class="card-title">Bonus features for placement impact</p></div>
+          <div class="tag-row">
+            <span class="tag tag-blue">CGPA cutoff filter</span>
+            <span class="tag tag-blue">Fresher vs experienced toggle</span>
+            <span class="tag tag-blue">Email alert for new matches</span>
+            <span class="tag tag-warn">GitHub skill gap analyzer</span>
+            <span class="tag tag-warn">Resume auto-tailor with LLM</span>
+          </div>
+          <p class="card-body" style="margin-top:8px">Each yellow tag = 1 extra interview story. Add even one and your project depth jumps significantly.</p>
+        </div>
+      </div>
+
+      <div class="card" style="border:2px solid var(--color-border-info)">
+        <div class="card-head"><i class="ti ti-target card-icon"></i><p class="card-title">The interview demo script</p></div>
+        <p class="card-body">
+          1. Open the live URL on your phone/laptop.<br>
+          2. Filter to "Data Science + Delhi/NCR + last 7 days".<br>
+          3. Show the skill heatmap — point to Python, SQL, LangChain rising.<br>
+          4. Paste your resume — show live fit scores for top 10 companies.<br>
+          5. Ask the LLM: "What should I add to my resume to be a better fit?"<br><br>
+          <strong style="font-weight:500">That 60-second demo</strong> covers: data engineering, NLP, ML, Streamlit, LLM APIs, SQL, and product thinking. No other project does all of that.
+        </p>
+      </div>
+    `
+  },
+  {
+    label: "Timeline",
+    title: "Realistic build timeline",
+    sub: "Build this in 3 weeks while studying — no all-nighters needed",
+    content: () => `
+      <div class="metric-grid">
+        <div class="metric-card"><p class="metric-val">3 weeks</p><p class="metric-label">Total build time</p></div>
+        <div class="metric-card"><p class="metric-val">₹0</p><p class="metric-label">Infrastructure cost</p></div>
+        <div class="metric-card"><p class="metric-val">5 APIs</p><p class="metric-label">Free tools used</p></div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Week 1 — foundation (days 1–7)</p>
+        <p class="card-body">
+          <strong style="font-weight:500">Days 1–2:</strong> Register JSearch + omkarcloud APIs. Write fetcher.py and save first 100 jobs to SQLite. Verify data quality.<br><br>
+          <strong style="font-weight:500">Days 3–4:</strong> Write cleaner.py — normalize city names, parse salary strings, deduplicate by job_id.<br><br>
+          <strong style="font-weight:500">Days 5–7:</strong> Build scheduler.py. Have it auto-fetching 4 job categories every 4 hours. DB should have 500+ rows by end of week.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Week 2 — ML pipeline (days 8–14)</p>
+        <p class="card-body">
+          <strong style="font-weight:500">Days 8–9:</strong> Build skill_extractor.py. Test on 50 job descriptions. Tune your skill keyword list.<br><br>
+          <strong style="font-weight:500">Days 10–11:</strong> Build K-Means clustering. Experiment with 3–7 clusters. Label each cluster manually (this is where domain knowledge shines).<br><br>
+          <strong style="font-weight:500">Days 12–14:</strong> Build TF-IDF resume scorer. Test with your own resume. Build the trend forecast with linear regression.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Week 3 — dashboard + deploy (days 15–21)</p>
+        <p class="card-body">
+          <strong style="font-weight:500">Days 15–17:</strong> Build the Streamlit dashboard. All 4 views: heatmap, trend chart, resume scorer, listings table.<br><br>
+          <strong style="font-weight:500">Days 18–19:</strong> Add Groq LLM chat interface. Wire it to query the live DB context.<br><br>
+          <strong style="font-weight:500">Days 20–21:</strong> Push to GitHub. Deploy to Streamlit Cloud. Write a clean README with screenshots. Record a 2-min demo video.
+        </p>
+      </div>
+
+      <div class="success-box"><i class="ti ti-check" style="margin-right:6px"></i>Push to GitHub on Day 1 and commit daily. Recruiters look at commit history — it shows consistency and real work, not a weekend hack.</div>
+
+      <button class="nav-btn primary" onclick="sendPrompt('Generate the complete fetcher.py and cleaner.py code for the Job Market Intelligence Dashboard using JSearch API and SQLite')">Generate the full starter code ↗</button>
+    `
+  }
+];
+
+let current = 0;
+
+function render() {
+  const nav = document.getElementById('stepNav');
+  const panels = document.getElementById('panels');
+  nav.innerHTML = steps.map((s, i) =>
+    `<button class="step-pill ${i===current?'active':''}" onclick="go(${i})">${i+1}. ${s.label}</button>`
+  ).join('');
+  panels.innerHTML = steps.map((s, i) => `
+    <div class="panel ${i===current?'active':''}" id="panel-${i}">
+      <p class="panel-title">${s.title}</p>
+      <p class="panel-sub">${s.sub}</p>
+      ${s.content()}
+      <div class="nav-row">
+        ${i > 0 ? `<button class="nav-btn" onclick="go(${i-1})">← Previous</button>` : '<span></span>'}
+        ${i < steps.length-1 ? `<button class="nav-btn primary" onclick="go(${i+1})">Next →</button>` : '<span></span>'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function go(i) {
+  current = i;
+  render();
+  document.querySelector('.root').scrollIntoView({behavior:'smooth'});
+}
+
+render();
+</script>
