@@ -14,3 +14,11 @@ data/resume_dataset/*.csv
 API.txt
 api.txt
 *.pyc
+
+# Internal planning/design docs (kept locally, not published)
+SRS_Real_Time_Job_Market_Intelligence_Dashboard.md
+BRD_Job_Market_Intelligence_Dashboard.md
+wireframe_job_market_and_finance_advisor.md
+System Architecture and technical design.md
+job_market_dashboard_build_guide.html
+DEMO_SCRIPT.md
