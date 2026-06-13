@@ -66,7 +66,19 @@ COLOR_SIGNAL = "#FFB224"
 COLOR_RADAR = "#3FC9B9"
 COLOR_DIM = "#8C9AB2"
 COLOR_PAPER = "#E9EEF8"
-PLOTLY_FONT = dict(family="IBM Plex Mono, monospace", color=COLOR_DIM, size=12)
+PLOTLY_FONT = dict(family="IBM Plex Mono, monospace", color=COLOR_DIM, size=13)
+
+# Shared Plotly render options. `responsive` is what makes charts redraw to the
+# real container width on phones (without it they can mount at the wrong size and
+# look broken on first load); hiding the modebar removes a confusing toolbar that
+# beginners never use and that overlaps the plot on small screens.
+PLOTLY_CONFIG = {
+    "responsive": True,
+    "displayModeBar": False,
+    "scrollZoom": False,
+    "doubleClick": False,
+    "displaylogo": False,
+}
 
 DOMAIN_KEYWORDS: dict[str, set[str]] = {
     "GenAI / LLM": {
@@ -600,6 +612,47 @@ def inject_styles() -> None:
             outline: 2px solid var(--signal);
             outline-offset: 2px;
         }
+
+        /* Plotly charts must always track the real container width so they don't
+           mount at the wrong size on a phone and look clipped or empty. */
+        .js-plotly-plot, .plotly, .plot-container {
+            width: 100% !important;
+        }
+
+        /* ---- phones / narrow screens ---- */
+        @media (max-width: 640px) {
+            .block-container {
+                padding-left: 0.7rem;
+                padding-right: 0.7rem;
+                padding-bottom: 4rem;
+            }
+
+            .hero h1 { font-size: 1.55rem; }
+            .hero p { font-size: 0.88rem; }
+
+            .gate-title { font-size: 1.9rem; }
+            .gate-stats { gap: 1.2rem 1.6rem; margin-top: 1.1rem; }
+            .gate-stat .n { font-size: 1.2rem; }
+
+            /* Let the tab rail scroll sideways instead of squashing the labels. */
+            .stTabs [data-baseweb="tab-list"] {
+                gap: 1rem;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { display: none; }
+            .stTabs [data-baseweb="tab"] { white-space: nowrap; }
+            .stTabs [data-baseweb="tab"] p {
+                font-size: 0.72rem;
+                letter-spacing: 0.08em;
+            }
+
+            div[data-testid="stMetric"] { padding: 0.7rem 0.8rem; }
+            div[data-testid="stMetricValue"] { font-size: 1.2rem; }
+
+            .tick { margin-right: 1.6rem; font-size: 0.72rem; }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1052,33 +1105,45 @@ def render_metrics(frame: pd.DataFrame) -> None:
             st.metric(label, value)
 
 
+# How many bars the skill chart shows. Kept deliberately small: a beginner can
+# read a dozen labelled bars at a glance, and the shorter chart fits a phone
+# screen without endless scrolling.
+TOP_SKILLS_CHART_COUNT = 12
+
+
 def render_skill_chart(frame: pd.DataFrame) -> None:
-    st.subheader("Top 20 Most Demanded Skills Across Filtered Listings")
+    st.subheader("Which skills do employers ask for most?")
     if frame.empty:
         st.info("No active listings are available for skill analysis. Run the ingestion cycle or adjust the filters.")
         return
 
     try:
-        with st.spinner("Building skill frequency profile..."):
+        with st.spinner("Counting skills across the live listings..."):
             skill_counts = aggregate_skill_counts(frame)
             if not skill_counts:
                 st.info("The current records do not include extractable skills.")
                 return
 
-            top_skills = skill_counts.most_common(20)
+            top_skills = skill_counts.most_common(TOP_SKILLS_CHART_COUNT)
             skill_names = [skill for skill, _ in reversed(top_skills)]
             volumes = [count for _, count in reversed(top_skills)]
-            total_mentions = sum(skill_counts.values()) or 1
 
             profile_skills = get_profile_skills_lower()
-            bar_colors = [
-                COLOR_SIGNAL if skill.lower() in profile_skills else COLOR_RADAR
-                for skill in skill_names
-            ]
+            you_have = [skill.lower() in profile_skills for skill in skill_names]
+            bar_colors = [COLOR_SIGNAL if owned else COLOR_RADAR for owned in you_have]
             ownership = [
-                "on your profile" if skill.lower() in profile_skills else "not on your profile yet"
-                for skill in skill_names
+                "You already have this" if owned else "Not on your profile yet"
+                for owned in you_have
             ]
+
+            # Plain-English legend above the chart so the colour meaning is read
+            # before the bars, not as fine print afterwards.
+            st.markdown(
+                '<p class="hint-copy">Each bar is how many open jobs mention that skill. '
+                '<span style="color:#FFB224;font-weight:600;">Amber</span> = a skill you already have &nbsp;·&nbsp; '
+                '<span style="color:#3FC9B9;font-weight:600;">Teal</span> = a skill to consider learning.</p>',
+                unsafe_allow_html=True,
+            )
 
             figure = go.Figure(
                 go.Bar(
@@ -1089,36 +1154,48 @@ def render_skill_chart(frame: pd.DataFrame) -> None:
                         color=bar_colors,
                         line=dict(color="rgba(233,238,248,0.12)", width=0.5),
                     ),
-                    text=[f"{count:,}" for count in volumes],
+                    text=[f"{count:,} jobs" for count in volumes],
                     textposition="outside",
+                    cliponaxis=False,
                     customdata=[[label] for label in ownership],
-                    hovertemplate="%{y}<br>Mentions: %{x}<br>%{customdata[0]}<extra></extra>",
+                    hovertemplate="<b>%{y}</b><br>%{x} jobs ask for this<br>%{customdata[0]}<extra></extra>",
                 )
             )
             figure.update_layout(
                 template="plotly_dark",
                 font=PLOTLY_FONT,
-                height=max(560, 30 * len(skill_names) + 220),
-                margin=dict(l=20, r=20, t=20, b=20),
-                xaxis=dict(title="Mention count", gridcolor="rgba(140,154,178,0.12)"),
-                yaxis=dict(title="", autorange="reversed"),
+                height=max(320, 34 * len(skill_names) + 120),
+                margin=dict(l=10, r=70, t=10, b=40),
+                xaxis=dict(
+                    title="Number of job listings",
+                    gridcolor="rgba(140,154,178,0.12)",
+                    automargin=True,
+                ),
+                yaxis=dict(title="", autorange="reversed", automargin=True),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 showlegend=False,
             )
-            st.plotly_chart(figure, use_container_width=True)
+            st.plotly_chart(figure, use_container_width=True, config=PLOTLY_CONFIG)
 
-            st.caption("Amber bars are skills already on your profile; teal bars are still open gaps.")
-            summary_bits = [
-                f"{skill} ({count / total_mentions:.1%})" for skill, count in top_skills[:5]
-            ]
-            st.caption("Top demand signals: " + ", ".join(summary_bits))
+            top_three = ", ".join(skill for skill, _ in top_skills[:3])
+            gaps = [skill for skill, owned in zip(skill_names, you_have) if not owned]
+            if gaps:
+                # skill_names is reversed (lowest first), so the last gaps are the
+                # highest-demand ones — surface those as the suggestion.
+                suggestion = ", ".join(reversed(gaps[-3:]))
+                st.caption(
+                    f"Most in demand right now: {top_three}. "
+                    f"Biggest gaps for you to learn: {suggestion}."
+                )
+            else:
+                st.caption(f"Most in demand right now: {top_three}. You already cover the top skills — nice.")
     except Exception as exc:
         st.warning(f"Skill chart could not be rendered cleanly: {exc}")
 
 
 def render_forecast_chart(frame: pd.DataFrame) -> None:
-    st.subheader(f"{FORECAST_HORIZON_DAYS}-Day Rolling Demand Trend & OLS Projection")
+    st.subheader("Is a skill being asked for more, or less, over time?")
     if frame.empty:
         st.info("No records are available for trend forecasting.")
         return
@@ -1137,14 +1214,14 @@ def render_forecast_chart(frame: pd.DataFrame) -> None:
         return
 
     focus_skill = st.selectbox(
-        "Select focus skill",
+        "Pick a skill to track",
         options=available_skills,
         index=0,
-        help="The forecast uses rolling historical demand and a linear OLS projection from the filtered database.",
+        help="See how often this skill has appeared in job posts recently, and where the trend is heading.",
     )
 
     try:
-        with st.spinner("Calculating rolling averages and trend projections..."):
+        with st.spinner("Working out the trend..."):
             timeseries = build_skill_timeseries(
                 frame[["id", "title", "company", "location", "description", "skills", "posted_at", "fetched_at"]].to_dict(
                     orient="records"
@@ -1168,9 +1245,10 @@ def render_forecast_chart(frame: pd.DataFrame) -> None:
                     x=history_dates,
                     y=series.values,
                     mode="lines+markers",
-                    name="Historical demand",
-                    line=dict(color=COLOR_RADAR, width=2.5),
-                    marker=dict(size=7),
+                    name="Jobs posted",
+                    line=dict(color=COLOR_RADAR, width=2),
+                    marker=dict(size=6),
+                    hovertemplate="%{x|%b %d}<br>%{y} jobs<extra>Jobs posted</extra>",
                 )
             )
             figure.add_trace(
@@ -1178,8 +1256,9 @@ def render_forecast_chart(frame: pd.DataFrame) -> None:
                     x=history_dates,
                     y=rolling_mean.values,
                     mode="lines",
-                    name="Rolling average",
+                    name="Smoothed trend",
                     line=dict(color=COLOR_DIM, width=3),
+                    hovertemplate="%{x|%b %d}<br>%{y:.1f} jobs (3-day avg)<extra>Smoothed trend</extra>",
                 )
             )
             figure.add_trace(
@@ -1187,30 +1266,38 @@ def render_forecast_chart(frame: pd.DataFrame) -> None:
                     x=forecast_future["date"],
                     y=forecast_future["prediction"],
                     mode="lines",
-                    name="OLS projection",
+                    name=f"Projected next {FORECAST_HORIZON_DAYS} days",
                     line=dict(color=COLOR_SIGNAL, width=3, dash="dash"),
+                    hovertemplate="%{x|%b %d}<br>~%{y:.1f} jobs (projected)<extra>Projection</extra>",
                 )
             )
 
             figure.update_layout(
                 template="plotly_dark",
                 font=PLOTLY_FONT,
-                height=560,
-                margin=dict(l=20, r=20, t=20, b=20),
-                xaxis=dict(title="Date", gridcolor="rgba(140,154,178,0.12)"),
-                yaxis=dict(title="Job count", gridcolor="rgba(140,154,178,0.12)"),
+                height=420,
+                margin=dict(l=10, r=20, t=10, b=40),
+                xaxis=dict(title="", gridcolor="rgba(140,154,178,0.12)", automargin=True),
+                yaxis=dict(title="Jobs per day", gridcolor="rgba(140,154,178,0.12)", automargin=True, rangemode="tozero"),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+                hovermode="x unified",
             )
-            st.plotly_chart(figure, use_container_width=True)
+            st.plotly_chart(figure, use_container_width=True, config=PLOTLY_CONFIG)
 
             slope_estimate = float(forecast_future["prediction"].iloc[-1] - forecast_future["prediction"].iloc[0]) / 6.0
-            direction = "upward" if slope_estimate >= 0 else "downward"
+            if slope_estimate > 0.05:
+                verdict = f"📈 **{focus_skill}** is being asked for **more** lately — a good skill to invest in."
+            elif slope_estimate < -0.05:
+                verdict = f"📉 **{focus_skill}** is being asked for **less** lately — demand is cooling off."
+            else:
+                verdict = f"➖ **{focus_skill}** demand is holding **steady** for now."
             st.caption(
-                f"Model insight: {focus_skill} is tracking a {direction} linear trend across the next "
-                f"{FORECAST_HORIZON_DAYS} days with an average slope of {slope_estimate:.2f} jobs/day."
+                "The teal line is how many jobs mentioned this skill each day; the grey line smooths out "
+                "the day-to-day noise; the dashed amber line is where the trend is heading."
             )
+            st.markdown(verdict)
     except Exception as exc:
         st.warning(f"Trend chart could not be rendered cleanly: {exc}")
 
